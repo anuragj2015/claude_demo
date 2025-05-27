@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing App with Table Templates</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        .tool-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tool-btn.active {
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-input, .size-input {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.3rem;
+        }
+
+        .table-templates {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .table-template {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .table-template:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #drawingCanvas {
+            display: block;
+            cursor: crosshair;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar h3 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .table-editor {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .table-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .table-controls input {
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .table-controls input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .add-table-btn {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .add-table-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .layers-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .layer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #ff4444;
+            border: none;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .floating-table {
+            position: absolute;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 4px;
+            cursor: move;
+            min-width: 150px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .floating-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .floating-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            min-width: 60px;
+            min-height: 30px;
+        }
+
+        .floating-table .table-header {
+            background: #f5f5f5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            background: #333;
+            cursor: se-resize;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 Drawing App with Tables</h1>
+        <div class="toolbar">
+            <div class="tool-group">
+                <button class="tool-btn active" data-tool="pen">✏️ Pen</button>
+                <button class="tool-btn" data-tool="eraser">🧹 Eraser</button>
+                <button class="tool-btn" data-tool="line">📏 Line</button>
+                <button class="tool-btn" data-tool="rectangle">⬜ Rectangle</button>
+                <button class="tool-btn" data-tool="circle">⭕ Circle</button>
+            </div>
+            
+            <div class="tool-group">
+                <input type="color" class="color-input" id="colorPicker" value="#000000">
+                <input type="range" class="size-input" id="brushSize" min="1" max="20" value="3">
+            </div>
+            
+            <div class="tool-group table-templates">
+                <div class="table-template" data-rows="2" data-cols="2">2×2</div>
+                <div class="table-template" data-rows="3" data-cols="3">3×3</div>
+                <div class="table-template" data-rows="2" data-cols="4">2×4</div>
+                <div class="table-template" data-rows="4" data-cols="2">4×2</div>
+                <div class="table-template" data-rows="5" data-cols="3">5×3</div>
+            </div>
+            
+            <div class="tool-group">
+                <button class="tool-btn" onclick="clearCanvas()">🗑️ Clear</button>
+                <button class="tool-btn" onclick="saveCanvas()">💾 Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="canvas-container">
+            <canvas id="drawingCanvas"></canvas>
+        </div>
+        
+        <div class="sidebar">
+            <div class="table-editor">
+                <h3>📊 Custom Table</h3>
+                <div class="table-controls">
+                    <input type="number" id="customRows" placeholder="Rows" value="3" min="1" max="10">
+                    <input type="number" id="customCols" placeholder="Columns" value="3" min="1" max="10">
+                </div>
+                <button class="add-table-btn" onclick="addCustomTable()">Add Custom Table</button>
+            </div>
+            
+            <div class="layers-panel">
+                <h3>📋 Tables & Objects</h3>
+                <div id="layersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // State management
+        let currentTool = 'pen';
+        let isDrawing = false;
+        let startX, startY;
+        let tables = [];
+        let selectedTable = null;
+        let dragOffset = { x: 0, y: 0 };
+        let isDragging = false;
+        let isResizing = false;
+        
+        // Initialize canvas
+        function initCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+        
+        // Resize canvas on window resize
+        window.addEventListener('resize', () => {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            initCanvas();
+            ctx.putImageData(imageData, 0, 0);
+        });
+        
+        // Tool selection
+        document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelector('.tool-btn.active').classList.remove('active');
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+                
+                if (currentTool === 'eraser') {
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    canvas.style.cursor = 'crosshair';
+                }
+            });
+        });
+        
+        // Table template selection
+        document.querySelectorAll('.table-template').forEach(template => {
+            template.addEventListener('click', (e) => {
+                const rows = parseInt(template.dataset.rows);
+                const cols = parseInt(template.dataset.cols);
+                addTable(rows, cols, canvas.width / 2 - 100, canvas.height / 2 - 50);
+            });
+        });
+        
+        // Drawing functions
+        function startDrawing(e) {
+            if (currentTool === 'pen' || currentTool === 'eraser') {
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                
+                if (currentTool === 'eraser') {
+                    ctx.globalCompositeOperation = 'destination-out';
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = document.getElementById('colorPicker').value;
+                }
+                ctx.lineWidth = document.getElementById('brushSize').value;
+            } else {
+                const rect = canvas.getBoundingClientRect();
+                startX = e.clientX - rect.left;
+                startY = e.clientY - rect.top;
+                isDrawing = true;
+            }
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (currentTool === 'pen' || currentTool === 'eraser') {
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+        }
+        
+        function stopDrawing(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            const rect = canvas.getBoundingClientRect();
+            const endX = e.clientX - rect.left;
+            const endY = e.clientY - rect.top;
+            
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = document.getElementById('colorPicker').value;
+            ctx.lineWidth = document.getElementById('brushSize').value;
+            
+            if (currentTool === 'line') {
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            } else if (currentTool === 'rectangle') {
+                ctx.beginPath();
+                ctx.rect(startX, startY, endX - startX, endY - startY);
+                ctx.stroke();
+            } else if (currentTool === 'circle') {
+                const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                ctx.beginPath();
+                ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+        }
+        
+        // Table functions
+        function addTable(rows, cols, x, y) {
+            const table = {
+                id: Date.now(),
+                rows: rows,
+                cols: cols,
+                x: x,
+                y: y,
+                width: cols * 80,
+                height: rows * 40,
+                data: Array(rows).fill().map(() => Array(cols).fill(''))
+            };
+            
+            tables.push(table);
+            createTableElement(table);
+            updateLayersList();
+        }
+        
+        function addCustomTable() {
+            const rows = parseInt(document.getElementById('customRows').value);
+            const cols = parseInt(document.getElementById('customCols').value);
+            
+            if (rows > 0 && cols > 0) {
+                addTable(rows, cols, canvas.width / 2 - (cols * 40), canvas.height / 2 - (rows * 20));
+            }
+        }
+        
+        function createTableElement(table) {
+            const tableDiv = document.createElement('div');
+            tableDiv.className = 'floating-table';
+            tableDiv.id = `table-${table.id}`;
+            tableDiv.style.left = table.x + 'px';
+            tableDiv.style.top = table.y + 'px';
+            tableDiv.style.width = table.width + 'px';
+            tableDiv.style.height = table.height + 'px';
+            
+            const header = document.createElement('div');
+            header.className = 'table-header';
+            header.innerHTML = `
+                <span>Table ${table.rows}×${table.cols}</span>
+                <button class="delete-btn" onclick="deleteTable(${table.id})">×</button>
+            `;
+            
+            const tableEl = document.createElement('table');
+            for (let i = 0; i < table.rows; i++) {
+                const row = document.createElement('tr');
+                for (let j = 0; j < table.cols; j++) {
+                    const cell = document.createElement('td');
+                    cell.contentEditable = true;
+                    cell.textContent = table.data[i][j];
+                    cell.addEventListener('input', (e) => {
+                        table.data[i][j] = e.target.textContent;
+                    });
+                    row.appendChild(cell);
+                }
+                tableEl.appendChild(row);
+            }
+            
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'resize-handle';
+            
+            tableDiv.appendChild(header);
+            tableDiv.appendChild(tableEl);
+            tableDiv.appendChild(resizeHandle);
+            
+            // Make table draggable
+            tableDiv.addEventListener('mousedown', (e) => {
+                if (e.target.className === 'resize-handle') {
+                    isResizing = true;
+                    selectedTable = table;
+                } else if (e.target.className === 'table-header' || e.target.tagName === 'SPAN') {
+                    isDragging = true;
+                    selectedTable = table;
+                    const rect = tableDiv.getBoundingClientRect();
+                    const canvasRect = canvas.getBoundingClientRect();
+                    dragOffset.x = e.clientX - rect.left;
+                    dragOffset.y = e.clientY - rect.top;
+                }
+            });
+            
+            canvas.parentElement.appendChild(tableDiv);
+        }
+        
+        function deleteTable(id) {
+            const tableIndex = tables.findIndex(t => t.id === id);
+            if (tableIndex > -1) {
+                tables.splice(tableIndex, 1);
+                const tableElement = document.getElementById(`table-${id}`);
+                if (tableElement) {
+                    tableElement.remove();
+                }
+                updateLayersList();
+            }
+        }
+        
+        function updateLayersList() {
+            const layersList = document.getElementById('layersList');
+            layersList.innerHTML = '';
+            
+            tables.forEach(table => {
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item';
+                layerItem.innerHTML = `
+                    <span>Table ${table.rows}×${table.cols}</span>
+                    <button class="delete-btn" onclick="deleteTable(${table.id})">Delete</button>
+                `;
+                layersList.appendChild(layerItem);
+            });
+        }
+        
+        // Global mouse events for table dragging and resizing
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging && selectedTable) {
+                const canvasRect = canvas.parentElement.getBoundingClientRect();
+                const newX = e.clientX - canvasRect.left - dragOffset.x;
+                const newY = e.clientY - canvasRect.top - dragOffset.y;
+                
+                selectedTable.x = Math.max(0, Math.min(newX, canvas.width - selectedTable.width));
+                selectedTable.y = Math.max(0, Math.min(newY, canvas.height - selectedTable.height));
+                
+                const tableElement = document.getElementById(`table-${selectedTable.id}`);
+                tableElement.style.left = selectedTable.x + 'px';
+                tableElement.style.top = selectedTable.y + 'px';
+            } else if (isResizing && selectedTable) {
+                const canvasRect = canvas.parentElement.getBoundingClientRect();
+                const mouseX = e.clientX - canvasRect.left;
+                const mouseY = e.clientY - canvasRect.top;
+                
+                const newWidth = Math.max(100, mouseX - selectedTable.x);
+                const newHeight = Math.max(60, mouseY - selectedTable.y);
+                
+                selectedTable.width = newWidth;
+                selectedTable.height = newHeight;
+                
+                const tableElement = document.getElementById(`table-${selectedTable.id}`);
+                tableElement.style.width = newWidth + 'px';
+                tableElement.style.height = newHeight + 'px';
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            isResizing = false;
+            selectedTable = null;
+        });
+        
+        // Canvas event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // Utility functions
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        function saveCanvas() {
+            const link = document.createElement('a');
+            link.download = 'drawing-with-tables.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Initialize
+        initCanvas();
+        
+        // Add some sample tables
+        setTimeout(() => {
+            addTable(3, 3, 100, 100);
+            addTable(2, 4, 300, 200);
+        }, 500);
+    </script>
+</body>
+</html>
